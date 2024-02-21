@@ -1,10 +1,14 @@
 package com.example.myapplication
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.constraintlayout.widget.ConstraintLayout
 
 class MainActivity : AppCompatActivity() {
     private lateinit var textView: TextView
@@ -20,23 +24,42 @@ class MainActivity : AppCompatActivity() {
         var imageButton2: ImageButton = (findViewById(R.id.imageButton3))
         var imageButton: ImageButton = (findViewById(R.id.imageButton))
         var imageButton3: ImageButton = (findViewById(R.id.imageButton2))
+        var imageView: ImageView = (findViewById(R.id.imageView))
+        var root: ConstraintLayout = (findViewById(R.id.root))
+
+        root.setOnClickListener {
+            Toast.makeText(this, "Вы нажали на ConstraintLayout", Toast.LENGTH_SHORT).show()
+        }
+
         imageButton.setOnClickListener {
             likes++
+            Toast.makeText(this, "Вы лайкнули новый пост", Toast.LENGTH_SHORT).show()
+
             updatelikes()
             imageButton2.visibility = View.VISIBLE
             imageButton.visibility = View.INVISIBLE
         }
         imageButton2.setOnClickListener {
             likes--
+            Toast.makeText(this, "Вы дизлайкнули новый пост", Toast.LENGTH_SHORT).show()
+
             updatelikes()
 
             imageButton.visibility = View.VISIBLE
             imageButton2.visibility = View.INVISIBLE
         }
+
         imageButton3.setOnClickListener {
             share += 10
-            updateshare()
+            Toast.makeText(this, "Вы поделились новым постом", Toast.LENGTH_SHORT).show()
 
+            updateshare()
+        }
+
+        imageView.setOnClickListener {
+            val intent = Intent(this, MainActivity::class.java)
+            Toast.makeText(this, "Вы обновили страницу", Toast.LENGTH_SHORT).show()
+            startActivity(intent)
         }
     }
     private fun updateshare() {
