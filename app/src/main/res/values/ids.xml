@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="remove_item" type="id"/>
+    <item name="remove" type="id"/>
+    <item name="linerLa" type="id" />
+    <item name="layoutt" type="id" />
+</resources>
