@@ -3,9 +3,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/remove_menu"
-        android:title="Удалить"
+        android:title="@string/remove_menu"
        />
     <item
         android:id="@+id/edit"
-        android:title="Изменить" />
+        android:title="@string/Edit" />
 </menu>
