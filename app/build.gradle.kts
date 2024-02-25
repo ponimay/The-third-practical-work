@@ -37,6 +37,7 @@ android {
 }
 
 dependencies {
+    implementation ("com.google.android.material:material:mdc_version")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.3.0")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.3.0")
     implementation("androidx.activity:activity-ktx:1.8.2")

@@ -150,23 +150,20 @@ class PostViewHolder(
             textView3.text = post.published
             textView4.text = post.content
 
-            imageButton.setImageResource(
-                if (post.likedByMe) R.drawable.img_4 else R.drawable.img
-            )
+            likeBtn?.isChecked= post.likedByMe
 
-            textView6.text = UpdateNumber.countAmountFormat(post.liketxt)
-            textView.text = UpdateNumber.countAmountFormat(post.sharetxt)
-            textView10.text = UpdateNumber.countAmountFormat(post.views)
+            textView.text = UpdateNumber.countAmountFormat(post.liketxt)
+            textView6.text = UpdateNumber.countAmountFormat(post.sharetxt)
 
-            imageButton.setOnClickListener {
+            likeBtn?.setOnClickListener {
                 listener.onLike(post)
             }
 
-            imageButton2.setOnClickListener {
+            share.setOnClickListener {
                 listener.onShare(post)
             }
 
-            imageButton5.setOnClickListener {
+            menu?.setOnClickListener {
                 PopupMenu(it.context, it).apply {
                     inflate(R.menu.remove_item)
                     setOnMenuItemClickListener { item ->
@@ -213,7 +210,7 @@ data class Post (
     val published: String,
     var likedByMe: Boolean = false,
     var sharedByMe: Boolean = false,
-    val liketxt: Int = 999,
+    var liketxt: Int = 999,
     val sharetxt: Int = 999,
     val views: Int = 999
 )
@@ -353,12 +350,25 @@ class PostRepositoryInMemoryImpl  : PostRepository {
         }
     }
 
+
     override fun removeById(id: Long) {
-        post = post.filter {
-            it.id != id
+        val existingPosts = data.value.orEmpty().toMutableList()
+        val postToRemove = existingPosts.firstOrNull { it.id == id }
+        if (postToRemove != null) {
+            existingPosts.remove(postToRemove)
+            // Проходим по оставшимся постам и сбрасываем likedByMe
+            for (post in existingPosts) {
+                if (post.likedByMe) {
+                    post.likedByMe = false
+                    // Обновляем также счетчик лайков
+                    post.liketxt = post.liketxt - 1
+                }
+            }
+            data.value = existingPosts
         }
-        data.value = post
     }
+
+
 }
 
 
