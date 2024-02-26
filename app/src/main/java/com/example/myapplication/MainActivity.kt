@@ -2,6 +2,7 @@ package com.example.myapplication
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,6 +11,7 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.PopupMenu
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -21,13 +23,19 @@ import com.example.myapplication.databinding.CardPostBinding
 
 
 class MainActivity : AppCompatActivity() {
+    override fun onResume() {
+        viewModel.clearEditing()
+        super.onResume()
+    }
+
+    val viewModel: PostViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val viewModel: PostViewModel by viewModels()
         val newPostContract = registerForActivityResult(NewPostActivity.Contract) { result ->
             result ?: return@registerForActivityResult
             viewModel.changeContent((result))
@@ -65,6 +73,11 @@ class MainActivity : AppCompatActivity() {
 
                 override fun onClearEditing(post: Post) {
                     viewModel.clearEditing()
+                }
+
+                override fun onOpenVideo(post: Post) {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(post.video))
+                    startActivity(intent)
                 }
             }
         )
@@ -129,6 +142,7 @@ interface OnInteractionListener  {
     fun onLike(post: Post)
     fun onShare(post: Post)
     fun onClearEditing(post: Post)
+    fun onOpenVideo(post: Post)
 }
 
 class PostAdapter(private val listener: OnInteractionListener ) : ListAdapter<Post, PostViewHolder>( PostDiffCallback())
@@ -182,7 +196,7 @@ class PostViewHolder(
             share.setOnClickListener {
                 listener.onShare(post)
             }
-
+            videoContent?.isVisible = !post.video.isNullOrBlank()
             menu?.setOnClickListener {
                 PopupMenu(it.context, it).apply {
                     inflate(R.menu.remove_item)
@@ -200,6 +214,9 @@ class PostViewHolder(
                         }
                     }
                 }.show()
+            }
+            play?.setOnClickListener {
+                listener.onOpenVideo(post)
             }
         }
     }
@@ -232,7 +249,8 @@ data class Post (
     var sharedByMe: Boolean = false,
     var liketxt: Int = 999,
     val sharetxt: Int = 999,
-    val views: Int = 999
+    val views: Int = 999,
+    val video: String?
 )
 
 interface PostRepository {
@@ -249,7 +267,8 @@ private val empty = Post(
     content = "",
     published = "",
     likedByMe = false,
-    sharedByMe = false
+    sharedByMe = false,
+    video = ""
 )
 class PostViewModel: ViewModel() {
     private val repository: PostRepository = PostRepositoryInMemoryImpl ()
@@ -303,7 +322,8 @@ class PostRepositoryInMemoryImpl  : PostRepository {
             author = "ГБПОУ ВО 'БТПИТ'",
             content = "Студенты 1-4 курсов специальности: \"Дошкольное образование\" Борисоглебского колледжа промышленных и информационных технологий, совместно с преподавателями Ларисой Владимировной Гребенниковой и Маргаритой Михайловной Луговиной, 13 февраля, на базе Борисоглебского филиала ВИРО им. Н.Ф. Бунакова, в рамках мероприятий Наставник клуба молодых педагогов, принял участие в семинаре на тему: \"Методы и методички формирования исследовательского поведения ребенка как условие его саморазвития\".\"В ходе этого образовательного интенсива Ольга Николаевна, региональный методист, педагог-психолог МБДОУ \"Новохоперский центр развития ребенка \"Пристань детства\", поделилась своим опытом работы. Подробнее читайте на нашем сайте -> https://btpit36.ru",
             published = "20 февраля в 09:00",
-            likedByMe = false
+            likedByMe = false,
+            video = "https://youtu.be/VS-nCSksbZw"
         ),
         Post(
             id = ++nextId,
@@ -312,7 +332,8 @@ class PostRepositoryInMemoryImpl  : PostRepository {
                     "Старший научный сотрудник музея Загребина Ольга Васильевна рассказала студентам, что Территория Воронежского Прихоперья, где мы живем, в историческом отношении весьма интересна. Основой экспозиции послужили материалы археологических раскопок.\n" +
                     "Студенты увидели экспонаты, которые помнит не одно поколение борисоглебцев (кость мамонта, например, значится под номером 1 в книге поступлений основного фонда музея), и совершенно новую коллекцию предметов археологии, которой пополнился Борисоглебский музей.",
             published = "21 февраля в 09:00",
-            likedByMe = false
+            likedByMe = false,
+            video = "https://youtube.com/shorts/3LI5DhSXndY?feature=share"
         ),
         Post(
             id = ++nextId,
@@ -320,7 +341,8 @@ class PostRepositoryInMemoryImpl  : PostRepository {
             content = "Студенты 4 курса специальности «Дошкольное образование» совместно с преподавателем Чихачевой Ириной Юрьевной Борисоглебского техникума промышленных и информационных технологий на занятиях по дисциплине Теоретические основы дошкольного образования в рамках освоения темы: «Современные технологии», погрузились в виртуальную реальность.\n" +
                     "Виртуальная реальность представляет среду моделирования или симуляции, которая погружает пользователя в виртуальный мир, обеспечивает человеку ощущение присутствия в нем, путем визуальных, звуковых и тактильных воздействий.",
             published = "22 февраля в 09:00",
-            likedByMe = false
+            likedByMe = false,
+            video = "https://youtube.com/shorts/A3LfRyf4GvM"
         ),
 
     ).reversed()
