@@ -9,4 +9,6 @@
     <string name="remove_menu">Remove</string>
     <string name="Edit">Edit</string>
     <string name="like">Like</string>
+    <string name="content">What s new?</string>
+    <string name="empty_post_error">Error</string>
 </resources>

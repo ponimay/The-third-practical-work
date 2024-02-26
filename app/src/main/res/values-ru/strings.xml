@@ -9,4 +9,6 @@
     <string name="remove_menu">Удалить</string>
     <string name="Edit">Редактировать</string>
     <string name="like">Лайк</string>
+    <string name="content">Что нового</string>
+    <string name="empty_post_error">Ошибка</string>
 </resources>
