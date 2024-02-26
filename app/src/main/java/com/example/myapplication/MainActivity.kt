@@ -1,13 +1,13 @@
 package com.example.myapplication
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.PopupMenu
-import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.LiveData
@@ -28,6 +28,12 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         val viewModel: PostViewModel by viewModels()
+        val newPostContract = registerForActivityResult(NewPostActivity.Contract) { result ->
+            result ?: return@registerForActivityResult
+            viewModel.changeContent((result))
+            viewModel.save()
+        }
+
 
         val adapter = PostAdapter(
             object : OnInteractionListener  {
@@ -37,10 +43,20 @@ class MainActivity : AppCompatActivity() {
 
                 override fun onEdit(post: Post) {
                     viewModel.edit(post)
+                    newPostContract.launch(post.content)
                 }
 
                 override fun onShare(post: Post) {
                     viewModel.shareById(post.id)
+                    val intent = Intent().apply {
+                        action = Intent.ACTION_SEND
+                        putExtra(Intent.EXTRA_TEXT, post.content)
+                        type = "text/plain"
+                    }
+
+                    val startIntent = Intent.createChooser(intent, getString(R.string.app_name))
+
+                    startActivity(startIntent)
                 }
 
                 override fun onLike(post: Post) {
@@ -54,50 +70,54 @@ class MainActivity : AppCompatActivity() {
         )
 
 
-        viewModel.edited.observe(this) {
-            if (it.id == 0L) {
-                binding.cancelGroup?.visibility = View.GONE
-                return@observe
-            }
-
-            binding.cancelGroup?.visibility = View.VISIBLE
-            binding.content?.requestFocus()
-            binding.content?.setText(it.content)
-        }
-
-
-        binding.cancel?.setOnClickListener {
-            binding.cancelGroup?.visibility = View.GONE
-            viewModel.clearEditing()
-            binding.content?.clearFocus()
-            binding.content?.setText("")
-        }
-
-        binding.save?.setOnClickListener {
-            with(binding.content) {
-                if (this?.text.isNullOrBlank()) {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Содержимое не может быть пустым",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    return@setOnClickListener
-                }
-
-                viewModel.changeContent(this?.text.toString())
-                viewModel.save()
-
-                this?.setText("")
-                this?.clearFocus()
-                this?.let { it1 -> AndroidUtils.hideKeyboard(it1) }
-            }
-        }
+//        viewModel.edited.observe(this) {
+//            if (it.id == 0L) {
+//                binding.cancelGroup?.visibility = View.GONE
+//                return@observe
+//            }
+//
+//            binding.cancelGroup?.visibility = View.VISIBLE
+//            binding.content?.requestFocus()
+//            binding.content?.setText(it.content)
+//        }
+//
+//
+//        binding.cancel?.setOnClickListener {
+//            binding.cancelGroup?.visibility = View.GONE
+//            viewModel.clearEditing()
+//            binding.content?.clearFocus()
+//            binding.content?.setText("")
+//        }
+//
+//        binding.save?.setOnClickListener {
+//            with(binding.content) {
+//                if (this?.text.isNullOrBlank()) {
+//                    Toast.makeText(
+//                        this@MainActivity,
+//                        "Содержимое не может быть пустым",
+//                        Toast.LENGTH_SHORT
+//                    ).show()
+//                    return@setOnClickListener
+//                }
+//
+//                viewModel.changeContent(this?.text.toString())
+//                viewModel.save()
+//
+//                this?.setText("")
+//                this?.clearFocus()
+//                this?.let { it1 -> AndroidUtils.hideKeyboard(it1) }
+//            }
+//        }
 
         viewModel.data.observe(this) { posts ->
             adapter.submitList(posts)
         }
 
         binding.list?.adapter = adapter
+
+        binding.add?.setOnClickListener {
+            newPostContract.launch("")
+        }
 
     }
 }
