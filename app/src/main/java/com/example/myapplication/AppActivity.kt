@@ -2,16 +2,16 @@ package com.example.myapplication
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.example.myapplication.databinding.ActivityIntentHandlerBinding
+import androidx.navigation.findNavController
+import com.example.myapplication.NewPostFragment.Companion.textArg
+import com.example.myapplication.databinding.ActivityAppBinding
 import com.google.android.material.snackbar.Snackbar
 
-class IntentHandlerActivity : AppCompatActivity() {
+class AppActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_intent_handler)
-        val binding = ActivityIntentHandlerBinding.inflate(layoutInflater)
+        val binding = ActivityAppBinding.inflate(layoutInflater)
 
         setContentView(binding.root)
 
@@ -28,8 +28,19 @@ class IntentHandlerActivity : AppCompatActivity() {
                     }
                     .show()
             } else {
-                Toast.makeText(this, text, Toast.LENGTH_LONG).show()
+                findNavController(R.id.nav_host_fragment)
+                    .navigate(R.id.action_feedFragment_to_newPostFragment,
+                        Bundle().apply {
+                            textArg = text
+                        }
+                    )
+            }
+
+            it.apply {
+                action = Intent.ACTION_DEFAULT
+                putExtra(Intent.EXTRA_TEXT, "")
             }
         }
     }
+
 }
