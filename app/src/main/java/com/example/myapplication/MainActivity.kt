@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -12,14 +13,18 @@ import android.widget.PopupMenu
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.databinding.ActivityMainBinding
 import com.example.myapplication.databinding.CardPostBinding
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import org.json.JSONObject
+import java.io.IOException
 
 
 class MainActivity : AppCompatActivity() {
@@ -35,6 +40,7 @@ class MainActivity : AppCompatActivity() {
 
         val binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
 
         val newPostContract = registerForActivityResult(NewPostActivity.Contract) { result ->
             result ?: return@registerForActivityResult
@@ -255,6 +261,7 @@ data class Post (
 
 interface PostRepository {
     fun getAll(): LiveData<List<Post>>
+    fun getData(): LiveData<List<Post>>
     fun likeById(id: Long)
     fun shareById(id: Long)
     fun removeById(id: Long)
@@ -270,10 +277,14 @@ private val empty = Post(
     sharedByMe = false,
     video = ""
 )
-class PostViewModel: ViewModel() {
-    private val repository: PostRepository = PostRepositoryInMemoryImpl ()
+class PostViewModel(application: Application): AndroidViewModel(application) {
+    private val repository: PostRepository = PostRepositoryInMemoryImpl(application)
 
-    val data: LiveData<List<Post>> = repository.getAll()
+    val data: LiveData<List<Post>> = repository.getData()
+    //val data: LiveData<List<Post>> = repository.getAll() - работает Json файл!!!
+
+
+
 
     fun likeById(id: Long) = repository.likeById(id)
 
@@ -315,45 +326,95 @@ class PostViewModel: ViewModel() {
 
 private var nextId = 0L
 
-class PostRepositoryInMemoryImpl  : PostRepository {
-    private var post = listOf(
-        Post(
-            id = ++nextId,
-            author = "ГБПОУ ВО 'БТПИТ'",
-            content = "Студенты 1-4 курсов специальности: \"Дошкольное образование\" Борисоглебского колледжа промышленных и информационных технологий, совместно с преподавателями Ларисой Владимировной Гребенниковой и Маргаритой Михайловной Луговиной, 13 февраля, на базе Борисоглебского филиала ВИРО им. Н.Ф. Бунакова, в рамках мероприятий Наставник клуба молодых педагогов, принял участие в семинаре на тему: \"Методы и методички формирования исследовательского поведения ребенка как условие его саморазвития\".\"В ходе этого образовательного интенсива Ольга Николаевна, региональный методист, педагог-психолог МБДОУ \"Новохоперский центр развития ребенка \"Пристань детства\", поделилась своим опытом работы. Подробнее читайте на нашем сайте -> https://btpit36.ru",
-            published = "20 февраля в 09:00",
-            likedByMe = false,
-            video = "https://youtu.be/VS-nCSksbZw"
-        ),
-        Post(
-            id = ++nextId,
-            author = "ГБПОУ ВО 'БТПИТ'",
-            content = "Преподаватель Борисоглебского техникума промышленных и информационных технологий Гребенникова Лариса Владимировна одно из занятий по дисциплине «Краеведение» со студентами 1 курсов специальностей «Дошкольное образование» и «Коррекционная педагогика в начальном образовании» провела в МБУК БГО Борисоглебском историко-художественном музее.\n" +
-                    "Старший научный сотрудник музея Загребина Ольга Васильевна рассказала студентам, что Территория Воронежского Прихоперья, где мы живем, в историческом отношении весьма интересна. Основой экспозиции послужили материалы археологических раскопок.\n" +
-                    "Студенты увидели экспонаты, которые помнит не одно поколение борисоглебцев (кость мамонта, например, значится под номером 1 в книге поступлений основного фонда музея), и совершенно новую коллекцию предметов археологии, которой пополнился Борисоглебский музей.",
-            published = "21 февраля в 09:00",
-            likedByMe = false,
-            video = "https://youtube.com/shorts/3LI5DhSXndY?feature=share"
-        ),
-        Post(
-            id = ++nextId,
-            author = "ГБПОУ ВО 'БТПИТ'",
-            content = "Студенты 4 курса специальности «Дошкольное образование» совместно с преподавателем Чихачевой Ириной Юрьевной Борисоглебского техникума промышленных и информационных технологий на занятиях по дисциплине Теоретические основы дошкольного образования в рамках освоения темы: «Современные технологии», погрузились в виртуальную реальность.\n" +
-                    "Виртуальная реальность представляет среду моделирования или симуляции, которая погружает пользователя в виртуальный мир, обеспечивает человеку ощущение присутствия в нем, путем визуальных, звуковых и тактильных воздействий.",
-            published = "22 февраля в 09:00",
-            likedByMe = false,
-            video = "https://youtube.com/shorts/A3LfRyf4GvM"
-        ),
+class PostRepositoryInMemoryImpl(
+    private val context: Context) : PostRepository
+{
+    //    private var post = listOf(
+//        Post(
+//            id = ++nextId,
+//            author = "ГБПОУ ВО 'БТПИТ'",
+//            content = "Студенты 1-4 курсов специальности: \"Дошкольное образование\" Борисоглебского колледжа промышленных и информационных технологий, совместно с преподавателями Ларисой Владимировной Гребенниковой и Маргаритой Михайловной Луговиной, 13 февраля, на базе Борисоглебского филиала ВИРО им. Н.Ф. Бунакова, в рамках мероприятий Наставник клуба молодых педагогов, принял участие в семинаре на тему: \"Методы и методички формирования исследовательского поведения ребенка как условие его саморазвития\".\"В ходе этого образовательного интенсива Ольга Николаевна, региональный методист, педагог-психолог МБДОУ \"Новохоперский центр развития ребенка \"Пристань детства\", поделилась своим опытом работы. Подробнее читайте на нашем сайте -> https://btpit36.ru",
+//            published = "20 февраля в 09:00",
+//            likedByMe = false,
+//            video = "https://youtube.com/shorts/A3LfRyf4GvM"
+//        ),
+//        Post(
+//            id = ++nextId,
+//            author = "ГБПОУ ВО 'БТПИТ'",
+//            content = "Преподаватель Борисоглебского техникума промышленных и информационных технологий Гребенникова Лариса Владимировна одно из занятий по дисциплине «Краеведение» со студентами 1 курсов специальностей «Дошкольное образование» и «Коррекционная педагогика в начальном образовании» провела в МБУК БГО Борисоглебском историко-художественном музее.\n" +
+//                    "Старший научный сотрудник музея Загребина Ольга Васильевна рассказала студентам, что Территория Воронежского Прихоперья, где мы живем, в историческом отношении весьма интересна. Основой экспозиции послужили материалы археологических раскопок.\n" +
+//                    "Студенты увидели экспонаты, которые помнит не одно поколение борисоглебцев (кость мамонта, например, значится под номером 1 в книге поступлений основного фонда музея), и совершенно новую коллекцию предметов археологии, которой пополнился Борисоглебский музей.",
+//            published = "21 февраля в 09:00",
+//            likedByMe = false,
+//            video = "https://youtube.com/shorts/3LI5DhSXndY?feature=share"
+//        ),
+//        Post(
+//            id = ++nextId,
+//            author = "ГБПОУ ВО 'БТПИТ'",
+//            content = "Студенты 4 курса специальности «Дошкольное образование» совместно с преподавателем Чихачевой Ириной Юрьевной Борисоглебского техникума промышленных и информационных технологий на занятиях по дисциплине Теоретические основы дошкольного образования в рамках освоения темы: «Современные технологии», погрузились в виртуальную реальность.\n" +
+//                    "Виртуальная реальность представляет среду моделирования или симуляции, которая погружает пользователя в виртуальный мир, обеспечивает человеку ощущение присутствия в нем, путем визуальных, звуковых и тактильных воздействий.",
+//            published = "22 февраля в 09:00",
+//            likedByMe = false,
+//            video = "https://youtu.be/VS-nCSksbZw"
+//        ),
+//
+//    ).reversed()
 
-    ).reversed()
-    private val data = MutableLiveData(post)
+    override fun getAll(): LiveData<List<Post>> {
+        val jsonString = loadJsonFromAsset("publication.json")
+        val jsonObject = JSONObject(jsonString)
+        val postData = jsonObject.getJSONObject("data")
+        val post = Gson().fromJson(postData.toString(), Post::class.java)
+        return MutableLiveData(listOf(post))
+    }
+    private fun loadJsonFromAsset(fileName: String): String {
+        return try {
+            context.assets.open(fileName).bufferedReader().use { it.readText() }
+        } catch (ioException: IOException) {
+            ioException.printStackTrace()
+            ""
+        }
+    }
 
-    override fun getAll(): LiveData<List<Post>> = data
+    companion object {
+        private const val FILE_NAME = "publication.json"
+    }
+    private val gson = Gson()
+    private val type = TypeToken.getParameterized(List::class.java, Post::class.java).type
+    private var posts: List<Post> = readPosts()
+        set(value) {
+            field = value
+            sync()
+        }
+
+    private val data = MutableLiveData(posts)
+    override fun getData(): LiveData<List<Post>> = data
+
+
+    private fun sync() {
+        context.openFileOutput(FILE_NAME, Context.MODE_PRIVATE).bufferedWriter().use {
+            it.write(gson.toJson(posts))
+        }
+    }
+
+    private fun readPosts(): List<Post> {
+        val file = context.filesDir.resolve(FILE_NAME)
+
+        return if (file.exists()) {
+            context.openFileInput(FILE_NAME).bufferedReader().use {
+                gson.fromJson(it, type)
+            }
+        } else {
+            emptyList()
+        }
+    }
+
+
     override fun save(post: Post) {
         val existingPosts = data.value.orEmpty().toMutableList()
 
         if (post.id == 0L) {
-            val newPost = post.copy(id = ++nextId)
+            val newPost = post.copy(id = existingPosts.firstOrNull()?.id ?: 0L +1)
             existingPosts.add(0, newPost)
         } else {
             val index = existingPosts.indexOfFirst { it.id == post.id }
@@ -364,6 +425,7 @@ class PostRepositoryInMemoryImpl  : PostRepository {
 
         data.value = existingPosts
     }
+
 
 
     override fun likeById(id: Long) {
@@ -379,6 +441,7 @@ class PostRepositoryInMemoryImpl  : PostRepository {
         }
     }
 
+
     override fun shareById(id: Long) {
         val existingPosts = data.value.orEmpty().toMutableList()
         val index = existingPosts.indexOfFirst { it.id == id }
@@ -393,22 +456,22 @@ class PostRepositoryInMemoryImpl  : PostRepository {
     }
 
 
+
     override fun removeById(id: Long) {
         val existingPosts = data.value.orEmpty().toMutableList()
         val postToRemove = existingPosts.firstOrNull { it.id == id }
         if (postToRemove != null) {
             existingPosts.remove(postToRemove)
-            // Проходим по оставшимся постам и сбрасываем likedByMe
             for (post in existingPosts) {
                 if (post.likedByMe) {
                     post.likedByMe = false
-                    // Обновляем также счетчик лайков
                     post.liketxt = post.liketxt - 1
                 }
             }
             data.value = existingPosts
         }
     }
+
 
 
 }

@@ -90,7 +90,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:barrierDirection="bottom"
-        app:constraint_referenced_ids="textView4,imageView5" />
+        app:constraint_referenced_ids="textView4" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/likeBtn"
@@ -171,16 +171,6 @@
         app:layout_constraintStart_toEndOf="@id/share"
         app:layout_constraintTop_toTopOf="@id/share"
         />
-
-
-    <ImageView
-        android:id="@+id/imageView5"
-        android:layout_width="195dp"
-        android:layout_height="208dp"
-        app:srcCompat="@drawable/img_1"
-        app:layout_constraintBottom_toBottomOf="@id/textView4"
-        app:layout_constraintStart_toEndOf="@id/headerBar"
-        app:layout_constraintTop_toTopOf="@id/bar"/>
 
 
     <ImageView
