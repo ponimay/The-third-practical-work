@@ -4,9 +4,10 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.example.myapplication.database.AppDb
+import com.example.myapplication.database.PostRepositorySQLiteImpl
 import com.example.myapplication.post.Post
 import com.example.myapplication.repos.PostRepository
-import com.example.myapplication.repos.PostRepositoryInMemoryImpl
 
 val empty = Post(
     id = 0,
@@ -20,8 +21,9 @@ val empty = Post(
     video = ""
 )
 class PostViewModel(application: Application): AndroidViewModel(application) {
-    private val repository: PostRepository = PostRepositoryInMemoryImpl(application)
-
+    private val repository: PostRepository = PostRepositorySQLiteImpl(
+                AppDb.getInstance(application).postDao
+    )
     val data: LiveData<List<Post>> = repository.getData()
     //val data: LiveData<List<Post>> = repository.getAll() - работает Json файл!!!
 

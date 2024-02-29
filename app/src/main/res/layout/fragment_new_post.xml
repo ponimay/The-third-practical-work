@@ -20,7 +20,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
-        app:backgroundTint="#9B98FD"
+        app:backgroundTint="#00B0FF"
         app:layout_constraintBottom_toBottomOf="parent"
         app:srcCompat="@drawable/addbtn"
         android:translationX="160dp"

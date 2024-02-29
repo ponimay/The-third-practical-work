@@ -10,7 +10,9 @@ import org.json.JSONObject
 import java.io.IOException
 
 class PostRepositoryInMemoryImpl(
-    private val context: Context
+    private val context: Context,
+
+
 ) : PostRepository {
     override fun getAll(): LiveData<List<Post>> {
         val jsonString = loadJsonFromAsset("publication.json")
@@ -39,6 +41,7 @@ class PostRepositoryInMemoryImpl(
         }
 
     private val data = MutableLiveData(posts)
+
     override fun getData(): LiveData<List<Post>> = data
 
 
@@ -62,17 +65,22 @@ class PostRepositoryInMemoryImpl(
 
 
     override fun save(post: Post) {
-        val existingPosts = data.value.orEmpty().toMutableList()
         if (post.id == 0L) {
-            val newPost = post.copy(id = existingPosts.firstOrNull()?.id ?: 0L+1)
-            existingPosts.add(0, newPost)
-        } else {
-            val index = existingPosts.indexOfFirst { it.id == post.id }
-            if (index != -1) {
-                existingPosts[index] = post
-            }
+            posts = listOf(
+                post.copy(
+                    id = (posts.firstOrNull()?.id ?: 0L) + 1
+                )
+            ) + posts
+            data.value = posts
+            return
         }
-        data.value = existingPosts
+
+        posts = posts.map {
+            if (it.id != post.id) it else it.copy(content = post.content)
+        }
+
+        data.value = posts
+        sync()
     }
 
 
@@ -80,29 +88,27 @@ class PostRepositoryInMemoryImpl(
         val existingPosts = data.value.orEmpty().toMutableList()
         val index = existingPosts.indexOfFirst { it.id == id }
         if (index != -1) {
-            val post = existingPosts[index]
-            existingPosts[index] = post.copy(
-                likedByMe = !post.likedByMe,
-                liketxt = if (post.likedByMe) post.liketxt - 1 else post.liketxt + 1
+            val updatedPost = existingPosts[index].copy(
+                likedByMe = !existingPosts[index].likedByMe,
+                liketxt = if (existingPosts[index].likedByMe) existingPosts[index].liketxt - 1 else existingPosts[index].liketxt + 1
             )
-            save(existingPosts[index])
+            existingPosts[index] = updatedPost
+            data.value = existingPosts
+            sync()
         }
-        sync()
     }
 
 
     override fun shareById(id: Long) {
-        val existingPosts = data.value.orEmpty().toMutableList()
-        val index = existingPosts.indexOfFirst { it.id == id }
-        if (index != -1) {
-            val post = existingPosts[index]
-            existingPosts[index] = post.copy(
-                shareByMe = !post.shareByMe,
-                sharetxt = if (post.shareByMe) post.sharetxt - 1 else post.sharetxt + 1
-            )
-            save(existingPosts[index])
+        posts = posts.map { post ->
+            if (post.id == id) {
+                post.copy(sharetxt = post.sharetxt + 1)
+            } else {
+                post
+            }
         }
-        sync()
+
+        data.value = posts
     }
     override fun removeById(id: Long) {
         val existingPosts = data.value.orEmpty().toMutableList()
@@ -118,5 +124,6 @@ class PostRepositoryInMemoryImpl(
             data.value = existingPosts
         }
     }
+
 
 }
